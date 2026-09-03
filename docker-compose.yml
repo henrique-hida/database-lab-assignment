@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: tsusho_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: tsusho
+      POSTGRES_USER: tsusho_user
+      POSTGRES_PASSWORD: tsusho_password
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tsusho_user -d tsusho"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:

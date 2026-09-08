@@ -71,6 +71,39 @@ CREATE TABLE concessionaria.marca_acessorio (
         UNIQUE (mca_nome)
 );
 
+CREATE TABLE concessionaria.status_veiculo (
+    sve_id BIGINT CONSTRAINT nn_status_veiculo_id NOT NULL,
+    sve_nome VARCHAR(20) CONSTRAINT nn_status_veiculo_nome NOT NULL,
+
+    CONSTRAINT pk_status_veiculo
+        PRIMARY KEY (sve_id),
+
+    CONSTRAINT uq_status_veiculo_nome
+        UNIQUE (sve_nome)
+);
+
+CREATE TABLE concessionaria.status_venda (
+    svd_id BIGINT CONSTRAINT nn_status_venda_id NOT NULL,
+    svd_nome VARCHAR(20) CONSTRAINT nn_status_venda_nome NOT NULL,
+
+    CONSTRAINT pk_status_venda
+        PRIMARY KEY (svd_id),
+
+    CONSTRAINT uq_status_venda_nome
+        UNIQUE (svd_nome)
+);
+
+CREATE TABLE concessionaria.status_venda_acessorio (
+    sva_id BIGINT CONSTRAINT nn_status_venda_acessorio_id NOT NULL,
+    sva_nome VARCHAR(30) CONSTRAINT nn_status_venda_acessorio_nome NOT NULL,
+
+    CONSTRAINT pk_status_venda_acessorio
+        PRIMARY KEY (sva_id),
+
+    CONSTRAINT uq_status_venda_acessorio_nome
+        UNIQUE (sva_nome)
+);
+
 -- =========================================================
 -- 2. CLIENTES
 -- =========================================================
@@ -134,7 +167,7 @@ CREATE TABLE concessionaria.veiculo (
     vcl_data_entrada_estoque DATE CONSTRAINT nn_veiculo_data_entrada NOT NULL,
     vcl_data_reserva DATE,
     vcl_data_saida DATE,
-    vcl_status VARCHAR(20) CONSTRAINT nn_veiculo_status NOT NULL,
+    vcl_status_veiculo_id BIGINT CONSTRAINT nn_veiculo_status_id NOT NULL,
     vcl_local_estoque VARCHAR(80) CONSTRAINT nn_veiculo_local_estoque NOT NULL,
     vcl_observacao TEXT,
 
@@ -153,6 +186,12 @@ CREATE TABLE concessionaria.veiculo (
     CONSTRAINT fk_veiculo_cor
         FOREIGN KEY (vcl_cor_id)
         REFERENCES concessionaria.cor (crr_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_veiculo_status
+        FOREIGN KEY (vcl_status_veiculo_id)
+        REFERENCES concessionaria.status_veiculo (sve_id)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
 
@@ -223,7 +262,7 @@ CREATE TABLE concessionaria.venda (
     vnd_data_pedido DATE CONSTRAINT nn_venda_data_pedido NOT NULL,
     vnd_data_faturamento DATE,
     vnd_data_entrega DATE,
-    vnd_status VARCHAR(20) CONSTRAINT nn_venda_status NOT NULL,
+    vnd_status_venda_id BIGINT CONSTRAINT nn_venda_status_id NOT NULL,
     vnd_observacao TEXT,
 
     CONSTRAINT pk_venda
@@ -247,6 +286,12 @@ CREATE TABLE concessionaria.venda (
     CONSTRAINT fk_venda_forma_pagamento
         FOREIGN KEY (vnd_forma_pagamento_id)
         REFERENCES concessionaria.forma_pagamento (fpg_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_venda_status
+        FOREIGN KEY (vnd_status_venda_id)
+        REFERENCES concessionaria.status_venda (svd_id)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
 
@@ -319,7 +364,8 @@ CREATE TABLE concessionaria.venda_acessorio (
         GENERATED ALWAYS AS ((vac_quantidade * vac_valor_unitario) - vac_desconto) STORED,
     vac_data_pedido DATE CONSTRAINT nn_venda_acessorio_data_pedido NOT NULL,
     vac_data_instalacao DATE,
-    vac_status VARCHAR(30) CONSTRAINT nn_venda_acessorio_status NOT NULL,
+    vac_status_venda_acessorio_id BIGINT
+        CONSTRAINT nn_venda_acessorio_status_id NOT NULL,
     vac_observacao TEXT,
 
     CONSTRAINT pk_venda_acessorio
@@ -343,6 +389,12 @@ CREATE TABLE concessionaria.venda_acessorio (
     CONSTRAINT fk_venda_acessorio_pagamento
         FOREIGN KEY (vac_forma_pagamento_id)
         REFERENCES concessionaria.forma_pagamento (fpg_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_venda_acessorio_status
+        FOREIGN KEY (vac_status_venda_acessorio_id)
+        REFERENCES concessionaria.status_venda_acessorio (sva_id)
         ON UPDATE RESTRICT
         ON DELETE RESTRICT,
 

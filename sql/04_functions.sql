@@ -198,6 +198,62 @@ END;
 $$;
 
 
+CREATE OR REPLACE FUNCTION concessionaria.fn_controlar_id_status_veiculo()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.sve_id := nextval('concessionaria.seq_status_veiculo'::regclass);
+    ELSIF TG_OP = 'UPDATE'
+        AND NEW.sve_id IS DISTINCT FROM OLD.sve_id THEN
+        RAISE EXCEPTION
+            'Nao e permitido alterar o identificador de status de veiculo.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION concessionaria.fn_controlar_id_status_venda()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.svd_id := nextval('concessionaria.seq_status_venda'::regclass);
+    ELSIF TG_OP = 'UPDATE'
+        AND NEW.svd_id IS DISTINCT FROM OLD.svd_id THEN
+        RAISE EXCEPTION
+            'Nao e permitido alterar o identificador de status de venda.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION concessionaria.fn_controlar_id_status_venda_acessorio()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.sva_id := nextval(
+            'concessionaria.seq_status_venda_acessorio'::regclass
+        );
+    ELSIF TG_OP = 'UPDATE'
+        AND NEW.sva_id IS DISTINCT FROM OLD.sva_id THEN
+        RAISE EXCEPTION
+            'Nao e permitido alterar o identificador de status de venda de acessorio.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
 CREATE OR REPLACE FUNCTION concessionaria.fn_controlar_id_acessorio()
 RETURNS TRIGGER
 LANGUAGE plpgsql

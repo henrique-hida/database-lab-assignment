@@ -146,6 +146,27 @@ SELECT DISTINCT
     sta_marca
 FROM staging.acessorios;
 
+INSERT INTO concessionaria.status_veiculo (
+    sve_nome
+)
+SELECT DISTINCT
+    stc_status
+FROM staging.carros;
+
+INSERT INTO concessionaria.status_venda (
+    svd_nome
+)
+SELECT DISTINCT
+    stv_status
+FROM staging.vendas;
+
+INSERT INTO concessionaria.status_venda_acessorio (
+    sva_nome
+)
+SELECT DISTINCT
+    sta_status
+FROM staging.acessorios;
+
 -- ----------------------------------------------------------------------------
 -- 3. CLIENTES
 -- ----------------------------------------------------------------------------
@@ -202,7 +223,7 @@ INSERT INTO concessionaria.veiculo (
     vcl_data_entrada_estoque,
     vcl_data_reserva,
     vcl_data_saida,
-    vcl_status,
+    vcl_status_veiculo_id,
     vcl_local_estoque,
     vcl_observacao
 )
@@ -216,7 +237,7 @@ SELECT
     stc.stc_entrada_estoque,
     stc.stc_data_reserva,
     stc.stc_data_saida,
-    stc.stc_status,
+    sve.sve_id,
     stc.stc_local,
     stc.stc_observacao
 FROM staging.carros AS stc
@@ -226,7 +247,9 @@ JOIN concessionaria.versao_veiculo AS vsv
     ON vsv.vsv_modelo_veiculo_id = mdv.mdv_id
    AND vsv.vsv_nome = stc.stc_versao
 JOIN concessionaria.cor AS crr
-    ON crr.crr_nome = stc.stc_cor;
+    ON crr.crr_nome = stc.stc_cor
+JOIN concessionaria.status_veiculo AS sve
+    ON sve.sve_nome = stc.stc_status;
 
 -- ----------------------------------------------------------------------------
 -- 5. ACESSORIOS
@@ -264,7 +287,7 @@ INSERT INTO concessionaria.venda (
     vnd_data_pedido,
     vnd_data_faturamento,
     vnd_data_entrega,
-    vnd_status,
+    vnd_status_venda_id,
     vnd_observacao
 )
 SELECT
@@ -279,7 +302,7 @@ SELECT
     stv.stv_data_pedido,
     stv.stv_data_faturamento,
     stv.stv_data_entrega,
-    stv.stv_status,
+    svd.svd_id,
     stv.stv_observacoes
 FROM staging.vendas AS stv
 JOIN concessionaria.cliente AS cln
@@ -287,7 +310,9 @@ JOIN concessionaria.cliente AS cln
 JOIN concessionaria.veiculo AS vcl
     ON vcl.vcl_placa = stv.stv_placa
 JOIN concessionaria.forma_pagamento AS fpg
-    ON fpg.fpg_descricao = stv.stv_forma_pagamento;
+    ON fpg.fpg_descricao = stv.stv_forma_pagamento
+JOIN concessionaria.status_venda AS svd
+    ON svd.svd_nome = stv.stv_status;
 
 -- ----------------------------------------------------------------------------
 -- 7. VEICULOS RECEBIDOS COMO TROCA
@@ -323,7 +348,7 @@ INSERT INTO concessionaria.venda_acessorio (
     vac_desconto,
     vac_data_pedido,
     vac_data_instalacao,
-    vac_status,
+    vac_status_venda_acessorio_id,
     vac_observacao
 )
 SELECT
@@ -335,7 +360,7 @@ SELECT
     sta.sta_desconto,
     sta.sta_data_pedido,
     sta.sta_data_instalacao,
-    sta.sta_status,
+    sva.sva_id,
     sta.sta_observacao
 FROM staging.acessorios AS sta
 JOIN concessionaria.veiculo AS vcl
@@ -351,7 +376,9 @@ JOIN concessionaria.acessorio AS acs
    AND acs.acs_categoria_acessorio_id = cta.cta_id
    AND acs.acs_marca_acessorio_id = mca.mca_id
 JOIN concessionaria.forma_pagamento AS fpg
-    ON fpg.fpg_descricao = sta.sta_forma_pagamento;
+    ON fpg.fpg_descricao = sta.sta_forma_pagamento
+JOIN concessionaria.status_venda_acessorio AS sva
+    ON sva.sva_nome = sta.sta_status;
 
 -- ----------------------------------------------------------------------------
 -- 9. VALIDACAO DAS QUANTIDADES MIGRADAS

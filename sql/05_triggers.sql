@@ -66,6 +66,24 @@ CREATE TRIGGER tg_marca_acessorio_controlar_id
     FOR EACH ROW
     EXECUTE FUNCTION concessionaria.fn_controlar_id_marca_acessorio();
 
+CREATE TRIGGER tg_status_veiculo_controlar_id
+    BEFORE INSERT OR UPDATE OF sve_id
+    ON concessionaria.status_veiculo
+    FOR EACH ROW
+    EXECUTE FUNCTION concessionaria.fn_controlar_id_status_veiculo();
+
+CREATE TRIGGER tg_status_venda_controlar_id
+    BEFORE INSERT OR UPDATE OF svd_id
+    ON concessionaria.status_venda
+    FOR EACH ROW
+    EXECUTE FUNCTION concessionaria.fn_controlar_id_status_venda();
+
+CREATE TRIGGER tg_status_venda_acessorio_controlar_id
+    BEFORE INSERT OR UPDATE OF sva_id
+    ON concessionaria.status_venda_acessorio
+    FOR EACH ROW
+    EXECUTE FUNCTION concessionaria.fn_controlar_id_status_venda_acessorio();
+
 CREATE TRIGGER tg_acessorio_controlar_id
     BEFORE INSERT OR UPDATE OF acs_id
     ON concessionaria.acessorio

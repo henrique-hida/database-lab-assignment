@@ -110,6 +110,36 @@ CREATE SEQUENCE concessionaria.seq_marca_acessorio
     CACHE 1
     OWNED BY concessionaria.marca_acessorio.mca_id;
 
+CREATE SEQUENCE concessionaria.seq_status_veiculo
+    AS BIGINT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    NO CYCLE
+    CACHE 1
+    OWNED BY concessionaria.status_veiculo.sve_id;
+
+CREATE SEQUENCE concessionaria.seq_status_venda
+    AS BIGINT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    NO CYCLE
+    CACHE 1
+    OWNED BY concessionaria.status_venda.svd_id;
+
+CREATE SEQUENCE concessionaria.seq_status_venda_acessorio
+    AS BIGINT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    NO CYCLE
+    CACHE 1
+    OWNED BY concessionaria.status_venda_acessorio.sva_id;
+
 CREATE SEQUENCE concessionaria.seq_acessorio
     AS BIGINT
     START WITH 1

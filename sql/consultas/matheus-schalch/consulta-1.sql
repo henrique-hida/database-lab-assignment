@@ -1,4 +1,51 @@
-WITH vendas_cidade_modelo AS (
+-- ----------------------------------------------------------------------------
+-- Inteligência Geográfica de Vendas e Adoção de Veículos Híbridos
+-- Consolida os dados históricos (Jan-Mar) e atuais (Abr-Mai) da concessionária
+-- para ranquear o desempenho comercial por praça/cidade, identificar o modelo
+-- mais vendido em cada região e avaliar a taxa de penetração da motorização híbrida.
+-- ----------------------------------------------------------------------------
+
+WITH vendas_consolidadas AS (
+    SELECT
+        vnd_id,
+        vnd_cliente_id,
+        vnd_veiculo_id,
+        vnd_forma_pagamento_id,
+        vnd_valor_carro,
+        vnd_desconto,
+        vnd_valor_final,
+        vnd_data_pedido,
+        vnd_status_venda_id
+    FROM concessionaria.venda
+    UNION ALL
+    SELECT
+        vnd_id,
+        vnd_cliente_id,
+        vnd_veiculo_id,
+        vnd_forma_pagamento_id,
+        vnd_valor_carro,
+        vnd_desconto,
+        vnd_valor_final,
+        vnd_data_pedido,
+        vnd_status_venda_id
+    FROM concessionaria.hvenda
+),
+veiculos_consolidados AS (
+    SELECT
+        vcl_id,
+        vcl_versao_veiculo_id,
+        vcl_cor_id,
+        vcl_status_veiculo_id
+    FROM concessionaria.veiculo
+    UNION ALL
+    SELECT
+        vcl_id,
+        vcl_versao_veiculo_id,
+        vcl_cor_id,
+        vcl_status_veiculo_id
+    FROM concessionaria.hveiculo
+),
+vendas_cidade_modelo AS (
     SELECT
         cdd.cdd_id,
         cdd.cdd_nome AS cidade,
@@ -9,14 +56,14 @@ WITH vendas_cidade_modelo AS (
             PARTITION BY cdd.cdd_id
             ORDER BY COUNT(vnd.vnd_id) DESC, SUM(vnd.vnd_valor_final) DESC
         ) AS rank_modelo_cidade
-    FROM concessionaria.venda AS vnd
+    FROM vendas_consolidadas AS vnd
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = vnd.vnd_status_venda_id
     JOIN concessionaria.cliente AS cln
         ON cln.cln_id = vnd.vnd_cliente_id
     JOIN concessionaria.cidade AS cdd
         ON cdd.cdd_id = cln.cln_cidade_id
-    JOIN concessionaria.veiculo AS vcl
+    JOIN veiculos_consolidados AS vcl
         ON vcl.vcl_id = vnd.vnd_veiculo_id
     JOIN concessionaria.versao_veiculo AS vsv
         ON vsv.vsv_id = vcl.vcl_versao_veiculo_id
@@ -48,14 +95,14 @@ totais_por_cidade AS (
             1
         ) AS taxa_penetracao_hibridos_pct
 
-    FROM concessionaria.venda AS vnd
+    FROM vendas_consolidadas AS vnd
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = vnd.vnd_status_venda_id
     JOIN concessionaria.cliente AS cln
         ON cln.cln_id = vnd.vnd_cliente_id
     JOIN concessionaria.cidade AS cdd
         ON cdd.cdd_id = cln.cln_cidade_id
-    JOIN concessionaria.veiculo AS vcl
+    JOIN veiculos_consolidados AS vcl
         ON vcl.vcl_id = vnd.vnd_veiculo_id
     JOIN concessionaria.versao_veiculo AS vsv
         ON vsv.vsv_id = vcl.vcl_versao_veiculo_id

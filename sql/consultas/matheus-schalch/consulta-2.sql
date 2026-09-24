@@ -1,8 +1,56 @@
-WITH resumo_trocas_por_venda AS (
+-- ----------------------------------------------------------------------------
+-- Estrutura de Financiamento e Impacto dos Veículos de Troca (Trade-in)
+-- Consolida os dados históricos (Jan-Mar) e atuais (Abr-Mai) da concessionária
+-- para analisar a distribuição das modalidades de pagamento, condições
+-- financeiras (entrada, parcelas) e a efetividade do programa de absorção de
+-- veículos seminovos na troca (volume financeiro, ticket médio e taxa de cobertura).
+-- ----------------------------------------------------------------------------
+
+WITH vendas_consolidadas AS (
     SELECT
-        vtr.vtr_venda_id,
-        vtr.vtr_valor_avaliado AS valor_troca
-    FROM concessionaria.veiculo_troca AS vtr
+        vnd_id,
+        vnd_forma_pagamento_id,
+        vnd_valor_carro,
+        vnd_desconto,
+        vnd_valor_final,
+        vnd_entrada,
+        vnd_parcelas,
+        vnd_valor_parcela,
+        vnd_status_venda_id
+    FROM concessionaria.venda
+    UNION ALL
+    SELECT
+        vnd_id,
+        vnd_forma_pagamento_id,
+        vnd_valor_carro,
+        vnd_desconto,
+        vnd_valor_final,
+        vnd_entrada,
+        vnd_parcelas,
+        vnd_valor_parcela,
+        vnd_status_venda_id
+    FROM concessionaria.hvenda
+),
+trocas_consolidadas AS (
+    SELECT
+        vtr_id,
+        vtr_venda_id,
+        vtr_descricao,
+        vtr_valor_avaliado
+    FROM concessionaria.veiculo_troca
+    UNION ALL
+    SELECT
+        vtr_id,
+        vtr_venda_id,
+        vtr_descricao,
+        vtr_valor_avaliado
+    FROM concessionaria.hveiculo_troca
+),
+resumo_trocas_por_venda AS (
+    SELECT
+        vtr_venda_id,
+        vtr_valor_avaliado AS valor_troca
+    FROM trocas_consolidadas
 ),
 consolidado_pagamento AS (
     SELECT
@@ -29,7 +77,7 @@ consolidado_pagamento AS (
             2
         ) AS cobertura_media_pelo_usado_pct
 
-    FROM concessionaria.venda AS vnd
+    FROM vendas_consolidadas AS vnd
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = vnd.vnd_status_venda_id
     JOIN concessionaria.forma_pagamento AS fpg

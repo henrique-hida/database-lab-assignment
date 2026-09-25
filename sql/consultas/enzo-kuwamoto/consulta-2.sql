@@ -1,8 +1,25 @@
-WITH total_acessorios_por_venda AS (
+-- ----------------------------------------------------------------------------
+-- Comportamento de Venda por Forma de Pagamento
+-- Consolida os dados históricos e atuais da concessionária para entender se
+-- a forma de pagamento impacta diretamente no percentual de descontos concedidos
+-- e no ticket médio de acessórios adquiridos.
+-- ----------------------------------------------------------------------------
+
+WITH vendas_consolidadas AS (
+    SELECT vnd_id, vnd_forma_pagamento_id, vnd_valor_carro, vnd_desconto, vnd_status_venda_id FROM concessionaria.venda
+    UNION ALL
+    SELECT vnd_id, vnd_forma_pagamento_id, vnd_valor_carro, vnd_desconto, vnd_status_venda_id FROM concessionaria.hvenda
+),
+acessorios_consolidados AS (
+    SELECT vac_venda_id, vac_total FROM concessionaria.venda_acessorio
+    UNION ALL
+    SELECT vac_venda_id, vac_total FROM concessionaria.hvenda_acessorio
+),
+total_acessorios_por_venda AS (
     SELECT 
         vac_venda_id,
         SUM(vac_total) AS total_acessorios
-    FROM concessionaria.venda_acessorio
+    FROM acessorios_consolidados
     GROUP BY vac_venda_id
 ),
 dados_forma_pagamento AS (
@@ -12,7 +29,7 @@ dados_forma_pagamento AS (
         vnd.vnd_desconto,
         (vnd.vnd_desconto / NULLIF(vnd.vnd_valor_carro, 0)) * 100 AS percentual_desconto,
         COALESCE(tac.total_acessorios, 0) AS valor_acessorios
-    FROM concessionaria.venda AS vnd
+    FROM vendas_consolidadas AS vnd
     JOIN concessionaria.forma_pagamento AS fpg 
         ON fpg.fpg_id = vnd.vnd_forma_pagamento_id
     JOIN concessionaria.status_venda AS svd 

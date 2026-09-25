@@ -1,14 +1,36 @@
-WITH vendas_com_acessorios AS (
+-- ----------------------------------------------------------------------------
+-- Cross-Selling de Acessórios por Modelo de Veículo
+-- Consolida os dados históricos e atuais da concessionária para identificar
+-- quais categorias de acessórios são mais vendidas em conjunto com determinados
+-- modelos de carros, auxiliando em campanhas de marketing e combos promocionais.
+-- ----------------------------------------------------------------------------
+
+WITH vendas_consolidadas AS (
+    SELECT vnd_id, vnd_veiculo_id, vnd_status_venda_id FROM concessionaria.venda
+    UNION ALL
+    SELECT vnd_id, vnd_veiculo_id, vnd_status_venda_id FROM concessionaria.hvenda
+),
+veiculos_consolidados AS (
+    SELECT vcl_id, vcl_versao_veiculo_id FROM concessionaria.veiculo
+    UNION ALL
+    SELECT vcl_id, vcl_versao_veiculo_id FROM concessionaria.hveiculo
+),
+acessorios_consolidados AS (
+    SELECT vac_venda_id, vac_acessorio_id, vac_quantidade, vac_total FROM concessionaria.venda_acessorio
+    UNION ALL
+    SELECT vac_venda_id, vac_acessorio_id, vac_quantidade, vac_total FROM concessionaria.hvenda_acessorio
+),
+vendas_com_acessorios AS (
     SELECT 
         mdv.mdv_nome AS modelo_carro,
         cta.cta_nome AS categoria_acessorio,
         vac.vac_quantidade AS quantidade,
         vac.vac_total AS valor_total_acessorio,
         vnd.vnd_id AS id_venda
-    FROM concessionaria.venda_acessorio AS vac
-    JOIN concessionaria.venda AS vnd 
+    FROM acessorios_consolidados AS vac
+    JOIN vendas_consolidadas AS vnd 
         ON vnd.vnd_id = vac.vac_venda_id
-    JOIN concessionaria.veiculo AS vcl 
+    JOIN veiculos_consolidados AS vcl 
         ON vcl.vcl_id = vnd.vnd_veiculo_id
     JOIN concessionaria.versao_veiculo AS vsv 
         ON vsv.vsv_id = vcl.vcl_versao_veiculo_id

@@ -66,7 +66,7 @@ db-clear:
 			-v ON_ERROR_STOP=1 \
 			-U $(USER) \
 			-d $(DATABASE) \
-			-c 'DROP SCHEMA IF EXISTS staging CASCADE; DROP SCHEMA IF EXISTS concessionaria CASCADE;' \
+			-c 'DROP SCHEMA IF EXISTS staging CASCADE; DROP SCHEMA IF EXISTS concessionaria CASCADE; DROP SCHEMA IF EXISTS auditoria CASCADE;' \
 		;; \
 	  *) \
 		echo 'Operação cancelada.' \

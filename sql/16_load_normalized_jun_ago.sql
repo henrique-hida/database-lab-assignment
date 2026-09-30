@@ -241,12 +241,6 @@ ON CONFLICT (acs_nome, acs_categoria_acessorio_id, acs_marca_acessorio_id) DO NO
 -- ----------------------------------------------------------------------------
 -- 5. REMOCAO DOS REGISTROS DATADOS
 -- ----------------------------------------------------------------------------
--- Os dados de abril/maio ja estao carregados no staging.
--- Neste ponto, removemos os registros temporais atualmente presentes nas
--- tabelas definitivas. Os triggers de historico criados nos scripts 09, 10
--- e 11 registram os registros OLD antes da exclusao.
---
--- Somente apos esta etapa a nova carga sera inserida nas tabelas definitivas.
 
 DELETE FROM concessionaria.venda_acessorio;
 DELETE FROM concessionaria.veiculo_troca;
@@ -363,7 +357,6 @@ WHERE stv.stv_carro_troca IS NOT NULL;
 -- 9. ACESSORIOS VENDIDOS
 -- ----------------------------------------------------------------------------
 
--- vac_total nao e informado porque e uma coluna GENERATED ALWAYS.
 INSERT INTO concessionaria.venda_acessorio (
     vac_venda_id,
     vac_acessorio_id,
@@ -483,7 +476,6 @@ BEGIN
 END;
 $$;
 
--- Remove a area temporaria apos a normalizacao de abril e maio.
 DROP SCHEMA IF EXISTS staging CASCADE;
 
 COMMIT;

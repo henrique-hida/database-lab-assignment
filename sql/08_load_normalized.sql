@@ -461,9 +461,6 @@ $$;
 -- 10. REMOCAO DA AREA DE STAGING
 -- ----------------------------------------------------------------------------
 
-DROP TABLE staging.acessorios;
-DROP TABLE staging.vendas;
-DROP TABLE staging.carros;
-DROP SCHEMA staging;
+DROP SCHEMA IF EXISTS staging CASCADE;
 
 COMMIT;

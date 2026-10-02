@@ -8,12 +8,12 @@
 WITH vendas_consolidadas AS (
     SELECT vnd_id, vnd_forma_pagamento_id, vnd_valor_carro, vnd_desconto, vnd_status_venda_id FROM concessionaria.venda
     UNION ALL
-    SELECT vnd_id, vnd_forma_pagamento_id, vnd_valor_carro, vnd_desconto, vnd_status_venda_id FROM concessionaria.hvenda
+    SELECT vnd_id, vnd_forma_pagamento_id, vnd_valor_carro, vnd_desconto, vnd_status_venda_id FROM concessionaria.his_venda
 ),
 acessorios_consolidados AS (
     SELECT vac_venda_id, vac_total FROM concessionaria.venda_acessorio
     UNION ALL
-    SELECT vac_venda_id, vac_total FROM concessionaria.hvenda_acessorio
+    SELECT vac_venda_id, vac_total FROM concessionaria.his_venda_acessorio
 ),
 total_acessorios_por_venda AS (
     SELECT 

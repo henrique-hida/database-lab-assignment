@@ -105,67 +105,74 @@ INSERT INTO concessionaria.cidade (
 SELECT DISTINCT
     stv_cidade,
     'SP'
-FROM staging.vendas;
+FROM staging.vendas
+ON CONFLICT (cdd_nome, cdd_uf) DO NOTHING;
 
 INSERT INTO concessionaria.cor (
     crr_nome
 )
 SELECT DISTINCT
     stc_cor
-FROM staging.carros;
+FROM staging.carros
+ON CONFLICT (crr_nome) DO NOTHING;
 
 INSERT INTO concessionaria.modelo_veiculo (
     mdv_nome
 )
 SELECT DISTINCT
     stc_modelo
-FROM staging.carros;
+FROM staging.carros
+ON CONFLICT (mdv_nome) DO NOTHING;
 
 INSERT INTO concessionaria.forma_pagamento (
     fpg_descricao
 )
 SELECT stv_forma_pagamento
 FROM staging.vendas
-
 UNION
-
 SELECT sta_forma_pagamento
-FROM staging.acessorios;
+FROM staging.acessorios
+ON CONFLICT (fpg_descricao) DO NOTHING;
 
 INSERT INTO concessionaria.categoria_acessorio (
     cta_nome
 )
 SELECT DISTINCT
     sta_categoria
-FROM staging.acessorios;
+FROM staging.acessorios
+ON CONFLICT (cta_nome) DO NOTHING;
 
 INSERT INTO concessionaria.marca_acessorio (
     mca_nome
 )
 SELECT DISTINCT
     sta_marca
-FROM staging.acessorios;
+FROM staging.acessorios
+ON CONFLICT (mca_nome) DO NOTHING;
 
 INSERT INTO concessionaria.status_veiculo (
     sve_nome
 )
 SELECT DISTINCT
     stc_status
-FROM staging.carros;
+FROM staging.carros
+ON CONFLICT (sve_nome) DO NOTHING;
 
 INSERT INTO concessionaria.status_venda (
     svd_nome
 )
 SELECT DISTINCT
     stv_status
-FROM staging.vendas;
+FROM staging.vendas
+ON CONFLICT (svd_nome) DO NOTHING;
 
 INSERT INTO concessionaria.status_venda_acessorio (
     sva_nome
 )
 SELECT DISTINCT
     sta_status
-FROM staging.acessorios;
+FROM staging.acessorios
+ON CONFLICT (sva_nome) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
 -- 3. CLIENTES
@@ -192,10 +199,11 @@ SELECT DISTINCT
 FROM staging.vendas AS stv
 JOIN concessionaria.cidade AS cdd
     ON cdd.cdd_nome = stv.stv_cidade
-   AND cdd.cdd_uf = 'SP';
+   AND cdd.cdd_uf = 'SP'
+ON CONFLICT (cln_documento) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 4. VERSOES E VEICULOS
+-- 4. VERSOES E ACESSORIOS NAO TEMPORAIS
 -- ----------------------------------------------------------------------------
 
 INSERT INTO concessionaria.versao_veiculo (
@@ -211,7 +219,37 @@ SELECT DISTINCT
     stc.stc_cambio
 FROM staging.carros AS stc
 JOIN concessionaria.modelo_veiculo AS mdv
-    ON mdv.mdv_nome = stc.stc_modelo;
+    ON mdv.mdv_nome = stc.stc_modelo
+ON CONFLICT (vsv_modelo_veiculo_id, vsv_nome) DO NOTHING;
+
+INSERT INTO concessionaria.acessorio (
+    acs_categoria_acessorio_id,
+    acs_marca_acessorio_id,
+    acs_nome
+)
+SELECT DISTINCT
+    cta.cta_id,
+    mca.mca_id,
+    sta.sta_acessorio
+FROM staging.acessorios AS sta
+JOIN concessionaria.categoria_acessorio AS cta
+    ON cta.cta_nome = sta.sta_categoria
+JOIN concessionaria.marca_acessorio AS mca
+    ON mca.mca_nome = sta.sta_marca
+ON CONFLICT (acs_nome, acs_categoria_acessorio_id, acs_marca_acessorio_id) DO NOTHING;
+
+-- ----------------------------------------------------------------------------
+-- 5. REMOCAO DOS REGISTROS DATADOS
+-- ----------------------------------------------------------------------------
+
+DELETE FROM concessionaria.venda_acessorio;
+DELETE FROM concessionaria.veiculo_troca;
+DELETE FROM concessionaria.venda;
+DELETE FROM concessionaria.veiculo;
+
+-- ----------------------------------------------------------------------------
+-- 6. VEICULOS
+-- ----------------------------------------------------------------------------
 
 INSERT INTO concessionaria.veiculo (
     vcl_versao_veiculo_id,
@@ -252,26 +290,7 @@ JOIN concessionaria.status_veiculo AS sve
     ON sve.sve_nome = stc.stc_status;
 
 -- ----------------------------------------------------------------------------
--- 5. ACESSORIOS
--- ----------------------------------------------------------------------------
-
-INSERT INTO concessionaria.acessorio (
-    acs_categoria_acessorio_id,
-    acs_marca_acessorio_id,
-    acs_nome
-)
-SELECT DISTINCT
-    cta.cta_id,
-    mca.mca_id,
-    sta.sta_acessorio
-FROM staging.acessorios AS sta
-JOIN concessionaria.categoria_acessorio AS cta
-    ON cta.cta_nome = sta.sta_categoria
-JOIN concessionaria.marca_acessorio AS mca
-    ON mca.mca_nome = sta.sta_marca;
-
--- ----------------------------------------------------------------------------
--- 6. VENDAS
+-- 7. VENDAS
 -- ----------------------------------------------------------------------------
 
 -- vnd_valor_final nao e informado porque e uma coluna GENERATED ALWAYS.
@@ -315,7 +334,7 @@ JOIN concessionaria.status_venda AS svd
     ON svd.svd_nome = stv.stv_status;
 
 -- ----------------------------------------------------------------------------
--- 7. VEICULOS RECEBIDOS COMO TROCA
+-- 8. VEICULOS RECEBIDOS COMO TROCA
 -- ----------------------------------------------------------------------------
 
 INSERT INTO concessionaria.veiculo_troca (
@@ -335,10 +354,9 @@ JOIN concessionaria.venda AS vnd
 WHERE stv.stv_carro_troca IS NOT NULL;
 
 -- ----------------------------------------------------------------------------
--- 8. ACESSORIOS VENDIDOS
+-- 9. ACESSORIOS VENDIDOS
 -- ----------------------------------------------------------------------------
 
--- vac_total nao e informado porque e uma coluna GENERATED ALWAYS.
 INSERT INTO concessionaria.venda_acessorio (
     vac_venda_id,
     vac_acessorio_id,
@@ -381,7 +399,7 @@ JOIN concessionaria.status_venda_acessorio AS sva
     ON sva.sva_nome = sta.sta_status;
 
 -- ----------------------------------------------------------------------------
--- 9. VALIDACAO DAS QUANTIDADES MIGRADAS
+-- 10. VALIDACAO DAS QUANTIDADES MIGRADAS
 -- ----------------------------------------------------------------------------
 
 DO $$
@@ -444,9 +462,10 @@ BEGIN
         ON acs.acs_nome = sta.sta_acessorio
        AND acs.acs_categoria_acessorio_id = cta.cta_id
        AND acs.acs_marca_acessorio_id = mca.mca_id
-    JOIN concessionaria.venda_acessorio AS vac
-        ON vac.vac_venda_id = vnd.vnd_id
-       AND vac.vac_acessorio_id = acs.acs_id;
+    JOIN concessionaria.forma_pagamento AS fpg
+        ON fpg.fpg_descricao = sta.sta_forma_pagamento
+    JOIN concessionaria.status_venda_acessorio AS sva
+        ON sva.sva_nome = sta.sta_status;
 
     IF qtd_staging <> qtd_destino THEN
         RAISE EXCEPTION
@@ -457,10 +476,6 @@ BEGIN
 END;
 $$;
 
--- ----------------------------------------------------------------------------
--- 10. REMOCAO DA AREA DE STAGING
--- ----------------------------------------------------------------------------
-
-DROP SCHEMA IF EXISTS staging CASCADE;
+TRUNCATE TABLE staging.vendas, staging.carros, staging.acessorios;
 
 COMMIT;

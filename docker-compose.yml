@@ -6,7 +6,7 @@ services:
 
     environment:
       POSTGRES_DB: tsusho
-      POSTGRES_USER: tsusho_user
+      POSTGRES_USER: tsusho_admin
       POSTGRES_PASSWORD: tsusho_password
 
     ports:
@@ -16,7 +16,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tsusho_user -d tsusho"]
+      test: ["CMD-SHELL", "pg_isready -U tsusho_admin -d tsusho"]
       interval: 5s
       timeout: 5s
       retries: 10

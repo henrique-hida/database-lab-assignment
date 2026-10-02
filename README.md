@@ -55,5 +55,5 @@ Gere o arquivo de carga:
 ```bash
 python scripts/generate_staging_load.py \
     entregaveis/tsusho-2026-preenchido.xlsx \
-    --saida sql/07_staging_load_jan_mar.sql
+    --saida sql/06_load_jan_mar.sql
 ```

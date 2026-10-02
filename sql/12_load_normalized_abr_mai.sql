@@ -293,7 +293,6 @@ JOIN concessionaria.status_veiculo AS sve
 -- 7. VENDAS
 -- ----------------------------------------------------------------------------
 
--- vnd_valor_final nao e informado porque e uma coluna GENERATED ALWAYS.
 INSERT INTO concessionaria.venda (
     vnd_cliente_id,
     vnd_veiculo_id,
@@ -476,6 +475,6 @@ BEGIN
 END;
 $$;
 
-DROP SCHEMA IF EXISTS staging CASCADE;
+TRUNCATE TABLE staging.vendas, staging.carros, staging.acessorios;
 
 COMMIT;

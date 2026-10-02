@@ -1,7 +1,8 @@
 -- ----------------------------------------------------------------------------
 -- Henrique Hida - Consulta 1
--- Evolucao mensal de vendas por modelo (Jan-Mai/2026)
--- Consolida a carga atual com as vendas e veiculos arquivados no historico.
+-- Evolucao mensal de vendas por modelo (Jan-Ago/2026)
+-- Responde a duvida: quais modelos entregues lideram o faturamento em cada
+-- mes e como o faturamento de cada modelo varia em relacao ao mes anterior?
 -- ----------------------------------------------------------------------------
 
 WITH vendas_consolidadas AS (
@@ -11,14 +12,14 @@ WITH vendas_consolidadas AS (
     UNION ALL
     SELECT vnd_id, vnd_veiculo_id, vnd_valor_final, vnd_desconto,
            vnd_data_pedido, vnd_status_venda_id
-    FROM concessionaria.hvenda
+    FROM concessionaria.his_venda
 ),
 veiculos_consolidados AS (
     SELECT vcl_id, vcl_versao_veiculo_id
     FROM concessionaria.veiculo
     UNION ALL
     SELECT vcl_id, vcl_versao_veiculo_id
-    FROM concessionaria.hveiculo
+    FROM concessionaria.his_veiculo
 ),
 vendas_mensais AS (
     SELECT
@@ -36,6 +37,8 @@ vendas_mensais AS (
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = vnd.vnd_status_venda_id
     WHERE svd.svd_nome = 'Entregue'
+      AND vnd.vnd_data_pedido >= DATE '2026-01-01'
+      AND vnd.vnd_data_pedido < DATE '2026-09-01'
     GROUP BY DATE_TRUNC('month', vnd.vnd_data_pedido), mdv.mdv_nome
 ),
 comparativo AS (

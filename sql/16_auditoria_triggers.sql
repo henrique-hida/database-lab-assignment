@@ -1,8 +1,6 @@
 BEGIN;
 
-SET ROLE auditoria_user;
-
-CREATE OR REPLACE FUNCTION auditoria.fn_registrar_alteracao()
+CREATE FUNCTION auditoria.fn_registrar_alteracao()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -84,9 +82,9 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION auditoria.fn_registrar_alteracao() FROM PUBLIC;
+ALTER FUNCTION auditoria.fn_registrar_alteracao() OWNER TO tsusho_audit;
 
-RESET ROLE;
+REVOKE ALL ON FUNCTION auditoria.fn_registrar_alteracao() FROM PUBLIC;
 
 DO $$
 DECLARE
@@ -99,13 +97,7 @@ BEGIN
             ON esquema.oid = classe.relnamespace
         WHERE esquema.nspname = 'concessionaria'
           AND classe.relkind = 'r'
-          AND classe.relname NOT LIKE 'h%'
     LOOP
-        EXECUTE format(
-            'DROP TRIGGER IF EXISTS tg_auditoria_registro ON concessionaria.%I',
-            tabela.relname
-        );
-
         EXECUTE format(
             'CREATE TRIGGER tg_auditoria_registro '
             || 'AFTER UPDATE OR DELETE ON concessionaria.%I '

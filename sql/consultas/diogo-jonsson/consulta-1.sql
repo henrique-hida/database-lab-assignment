@@ -7,21 +7,21 @@
 WITH vendas_historicas AS (
     SELECT
         'Jan-Mar' AS periodo,
-        DATE_TRUNC('month', hv.vnd_data_pedido)::DATE AS mes,
+        DATE_TRUNC('month', his_venda.vnd_data_pedido)::DATE AS mes,
         mdv.mdv_nome AS modelo,
-        hv.vnd_valor_final AS valor_final,
-        hv.vnd_desconto AS desconto
-    FROM concessionaria.hvenda AS hv
-    JOIN concessionaria.hveiculo AS hvc
-        ON hvc.vcl_id = hv.vnd_veiculo_id
+        his_venda.vnd_valor_final AS valor_final,
+        his_venda.vnd_desconto AS desconto
+    FROM concessionaria.his_venda
+    JOIN concessionaria.his_veiculo
+        ON his_veiculo.vcl_id = his_venda.vnd_veiculo_id
     JOIN concessionaria.versao_veiculo AS vsv
-        ON vsv.vsv_id = hvc.vcl_versao_veiculo_id
+        ON vsv.vsv_id = his_veiculo.vcl_versao_veiculo_id
     JOIN concessionaria.modelo_veiculo AS mdv
         ON mdv.mdv_id = vsv.vsv_modelo_veiculo_id
     JOIN concessionaria.status_venda AS svd
-        ON svd.svd_id = hv.vnd_status_venda_id
-    WHERE hv.vnd_data_pedido >= DATE '2026-01-01'
-      AND hv.vnd_data_pedido < DATE '2026-04-01'
+        ON svd.svd_id = his_venda.vnd_status_venda_id
+    WHERE his_venda.vnd_data_pedido >= DATE '2026-01-01'
+      AND his_venda.vnd_data_pedido < DATE '2026-04-01'
       AND svd.svd_nome = 'Entregue'
 ),
 vendas_atuais AS (

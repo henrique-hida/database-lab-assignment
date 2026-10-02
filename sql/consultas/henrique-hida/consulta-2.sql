@@ -1,22 +1,25 @@
 -- ----------------------------------------------------------------------------
 -- Henrique Hida - Consulta 2
--- Valor de clientes e adesao a acessorios (Jan-Mai/2026)
--- Consolida as vendas e os acessorios atuais com seus registros historicos.
+-- Valor de clientes e adesao a acessorios (Jan-Ago/2026)
+-- Responde a duvida: quais clientes geram mais receita, qual a participacao
+-- de cada um no faturamento e quantos aderem a acessorios nas compras?
 -- ----------------------------------------------------------------------------
 
 WITH vendas_consolidadas AS (
-    SELECT vnd_id, vnd_cliente_id, vnd_valor_final, vnd_status_venda_id
+    SELECT vnd_id, vnd_cliente_id, vnd_valor_final, vnd_data_pedido,
+           vnd_status_venda_id
     FROM concessionaria.venda
     UNION ALL
-    SELECT vnd_id, vnd_cliente_id, vnd_valor_final, vnd_status_venda_id
-    FROM concessionaria.hvenda
+    SELECT vnd_id, vnd_cliente_id, vnd_valor_final, vnd_data_pedido,
+           vnd_status_venda_id
+    FROM concessionaria.his_venda
 ),
 acessorios_consolidados AS (
     SELECT vac_venda_id, vac_total, vac_status_venda_acessorio_id
     FROM concessionaria.venda_acessorio
     UNION ALL
     SELECT vac_venda_id, vac_total, vac_status_venda_acessorio_id
-    FROM concessionaria.hvenda_acessorio
+    FROM concessionaria.his_venda_acessorio
 ),
 acessorios_por_venda AS (
     SELECT
@@ -46,6 +49,8 @@ resumo_cliente AS (
         ON svd.svd_id = vnd.vnd_status_venda_id
     LEFT JOIN acessorios_por_venda AS apv ON apv.vac_venda_id = vnd.vnd_id
     WHERE svd.svd_nome = 'Entregue'
+      AND vnd.vnd_data_pedido >= DATE '2026-01-01'
+      AND vnd.vnd_data_pedido < DATE '2026-09-01'
     GROUP BY cln.cln_id, cln.cln_nome, cln.cln_tipo_pessoa
 ),
 classificacao AS (

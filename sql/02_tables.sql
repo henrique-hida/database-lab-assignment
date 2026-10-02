@@ -1,5 +1,7 @@
 BEGIN;
 
+CREATE SCHEMA IF NOT EXISTS concessionaria;
+
 -- =========================================================
 -- 1. TABELAS INDEPENDENTES
 -- =========================================================
@@ -416,5 +418,12 @@ CREATE TABLE concessionaria.venda_acessorio (
             OR vac_data_instalacao >= vac_data_pedido
         )
 );
+
+GRANT USAGE ON SCHEMA concessionaria TO tsusho_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA concessionaria
+    TO tsusho_user;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE tsusho_admin IN SCHEMA concessionaria
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tsusho_user;
 
 COMMIT;

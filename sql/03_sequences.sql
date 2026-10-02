@@ -160,4 +160,10 @@ CREATE SEQUENCE concessionaria.seq_venda_acessorio
     CACHE 1
     OWNED BY concessionaria.venda_acessorio.vac_id;
 
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA concessionaria
+    TO tsusho_user;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE tsusho_admin IN SCHEMA concessionaria
+    GRANT USAGE, SELECT ON SEQUENCES TO tsusho_user;
+
 COMMIT;

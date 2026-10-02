@@ -1,6 +1,5 @@
 BEGIN;
 
--- vendas: 24 registros
 INSERT INTO staging.vendas (
     stv_cliente,
     stv_cpf_cnpj,
@@ -51,7 +50,6 @@ INSERT INTO staging.vendas (
     ('Renata Oliveira Mendes', '390.506.816-89', '(11) 90000-0065', 'São Paulo', 'Corolla Cross', 'XR 2.0 CVT', 'Branco Lunar', 2026, 'FWC5V45', 172990, 9000, 163990, 'Financiamento Banco Toyota', 62000, 36, 3680, NULL, NULL, DATE '2026-05-18', DATE '2026-05-20', DATE '2026-05-28', 'Entregue', 'Veículo retirado na unidade Mogi'),
     ('Samuel Moraes Monteiro', '390.514.735-16', '(11) 90000-0066', 'Suzano', 'Yaris Cross', 'XR 1.5 CVT', 'Vermelho Granada', 2026, 'FXC6C58', 155420, 3500, 151920, 'À vista', NULL, NULL, NULL, NULL, NULL, DATE '2026-05-06', DATE '2026-05-07', DATE '2026-05-10', 'Entregue', 'Incluiu acessórios antes da entrega');
 
--- carros: 24 registros
 INSERT INTO staging.carros (
     stc_modelo,
     stc_versao,
@@ -94,7 +92,6 @@ INSERT INTO staging.carros (
     ('Corolla Cross', 'XR 2.0 CVT', 2026, 'Branco Lunar', 'FWC5V45', 'Flex', 'Automático CVT', 172990, 163000, DATE '2026-03-31', DATE '2026-05-18', DATE '2026-05-28', 'Vendido', 'Pátio Mogi', 'Reservado'),
     ('Yaris Cross', 'XR 1.5 CVT', 2026, 'Vermelho Granada', 'FXC6C58', 'Flex', 'Automático CVT', 155420, 148000, DATE '2026-04-02', DATE '2026-05-06', DATE '2026-05-10', 'Vendido', 'Pátio Mogi', 'Reservado');
 
--- acessorios: 67 registros
 INSERT INTO staging.acessorios (
     sta_cliente,
     sta_modelo_carro,

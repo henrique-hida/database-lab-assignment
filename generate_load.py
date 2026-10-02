@@ -6,7 +6,7 @@ Uso:
 
 Também é possível definir o arquivo de saída e o período:
     python generate_staging_load.py tsusho-2026-preenchido.xlsx \
-        --saida 07_staging_load_jan_mar.sql \
+        --saida 06_load_jan_mar.sql \
         --inicio 2026-01-01 \
         --fim 2026-03-31
 
@@ -322,7 +322,7 @@ def criar_parser() -> argparse.ArgumentParser:
         "-o",
         "--saida",
         type=Path,
-        default=Path("07_staging_load_jan_mar.sql"),
+        default=Path("06_load_jan_mar.sql"),
         help="Arquivo SQL de saída",
     )
     parser.add_argument(

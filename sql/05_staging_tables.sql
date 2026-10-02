@@ -1,6 +1,5 @@
 BEGIN;
 
-DROP SCHEMA IF EXISTS staging CASCADE;
 CREATE SCHEMA IF NOT EXISTS staging;
 
 CREATE TABLE staging.vendas (
@@ -67,9 +66,9 @@ CREATE TABLE staging.acessorios (
     sta_observacao TEXT
 );
 
-GRANT USAGE ON SCHEMA staging TO tsusho_comum_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA staging TO tsusho_comum_user;
-ALTER DEFAULT PRIVILEGES FOR ROLE tsusho_user IN SCHEMA staging
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tsusho_comum_user;
+GRANT USAGE ON SCHEMA staging TO tsusho_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA staging TO tsusho_user;
+ALTER DEFAULT PRIVILEGES FOR ROLE tsusho_admin IN SCHEMA staging
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO tsusho_user;
 
 COMMIT;

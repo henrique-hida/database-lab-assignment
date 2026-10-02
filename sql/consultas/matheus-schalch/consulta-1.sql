@@ -28,7 +28,7 @@ WITH vendas_consolidadas AS (
         vnd_valor_final,
         vnd_data_pedido,
         vnd_status_venda_id
-    FROM concessionaria.hvenda
+    FROM concessionaria.his_venda
 ),
 veiculos_consolidados AS (
     SELECT
@@ -43,7 +43,7 @@ veiculos_consolidados AS (
         vcl_versao_veiculo_id,
         vcl_cor_id,
         vcl_status_veiculo_id
-    FROM concessionaria.hveiculo
+    FROM concessionaria.his_veiculo
 ),
 vendas_cidade_modelo AS (
     SELECT

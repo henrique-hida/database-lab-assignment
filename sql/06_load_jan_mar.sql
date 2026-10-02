@@ -1,6 +1,5 @@
 BEGIN;
 
--- vendas: 42 registros
 INSERT INTO staging.vendas (
     stv_cliente,
     stv_cpf_cnpj,
@@ -69,7 +68,6 @@ INSERT INTO staging.vendas (
     ('Renata Moraes Duarte', '390.316.760-63', '(11) 90000-0041', 'Guararema', 'Corolla', 'Altis Premium Hybrid', 'Cinza Granito', 2026, 'FVC1M33', 206990.00, 9000.00, 197990.00, 'Consórcio', 21000.00, 60, 3300.00, NULL, NULL, DATE '2026-03-14', DATE '2026-03-19', DATE '2026-03-28', 'Entregue', 'Incluiu acessórios antes da entrega'),
     ('Samuel Cardoso Borges', '390.324.679-48', '(11) 90000-0042', 'Mogi das Cruzes', 'Corolla', 'GLi Hybrid', 'Preto Infinito', 2026, 'FWC2V46', 191890.00, 4000.00, 187890.00, 'Financiamento', 79000.00, 36, 4200.00, NULL, NULL, DATE '2026-03-02', DATE '2026-03-06', DATE '2026-03-08', 'Entregue', 'Cliente solicitou entrega no sábado');
 
--- carros: 61 registros
 INSERT INTO staging.carros (
     stc_modelo,
     stc_versao,
@@ -149,7 +147,6 @@ INSERT INTO staging.carros (
     ('Corolla', 'Altis Premium Hybrid', 2026, 'Branco Pérola', 'FVC4M32', 'Híbrido Flex', 'Automático CVT', 209090.00, 199000.00, DATE '2026-03-29', DATE '2026-05-11', DATE '2026-05-23', 'Vendido', 'Pátio Mogi', 'Reservado'),
     ('Corolla Cross', 'XR 2.0 CVT', 2026, 'Branco Lunar', 'FWC5V45', 'Flex', 'Automático CVT', 172990.00, 163000.00, DATE '2026-03-31', DATE '2026-05-18', DATE '2026-05-28', 'Vendido', 'Pátio Mogi', 'Reservado');
 
--- acessorios: 106 registros
 INSERT INTO staging.acessorios (
     sta_cliente,
     sta_modelo_carro,

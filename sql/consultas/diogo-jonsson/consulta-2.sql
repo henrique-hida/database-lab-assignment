@@ -1,9 +1,20 @@
 -- ----------------------------------------------------------------------------
--- Prazo operacional de vendas por cidade
+-- Prazo operacional de vendas por cidade (Jan-Ago de 2026)
 -- Mede o tempo entre pedido, faturamento e entrega para identificar
 -- diferencas operacionais entre os mercados atendidos pela concessionaria.
 -- ----------------------------------------------------------------------------
 
+WITH vendas_consolidadas AS (
+    SELECT
+        vnd_id, vnd_valor_final, vnd_data_pedido, vnd_data_faturamento,
+        vnd_data_entrega, vnd_status_venda_id, vnd_cliente_id
+    FROM concessionaria.venda
+    UNION ALL
+    SELECT
+        vnd_id, vnd_valor_final, vnd_data_pedido, vnd_data_faturamento,
+        vnd_data_entrega, vnd_status_venda_id, vnd_cliente_id
+    FROM concessionaria.his_venda
+)
 SELECT
     cdd.cdd_nome AS cidade,
     cdd.cdd_uf AS uf,
@@ -22,7 +33,7 @@ SELECT
         ) / NULLIF(COUNT(*), 0),
         2
     ) AS percentual_entregas_ate_7_dias
-FROM concessionaria.venda AS vnd
+FROM vendas_consolidadas AS vnd
 JOIN concessionaria.status_venda AS svd
     ON svd.svd_id = vnd.vnd_status_venda_id
 JOIN concessionaria.cliente AS cln
@@ -30,8 +41,8 @@ JOIN concessionaria.cliente AS cln
 JOIN concessionaria.cidade AS cdd
     ON cdd.cdd_id = cln.cln_cidade_id
 WHERE svd.svd_nome = 'Entregue'
-  AND vnd.vnd_data_pedido >= DATE '2026-04-01'
-  AND vnd.vnd_data_pedido < DATE '2026-06-01'
+  AND vnd.vnd_data_pedido >= DATE '2026-01-01'
+  AND vnd.vnd_data_pedido < DATE '2026-09-01'
 GROUP BY
     cdd.cdd_id,
     cdd.cdd_nome,

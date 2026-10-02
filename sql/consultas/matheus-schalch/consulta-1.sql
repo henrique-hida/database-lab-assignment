@@ -4,7 +4,6 @@
 -- para ranquear o desempenho comercial por praça/cidade, identificar o modelo
 -- mais vendido em cada região e avaliar a taxa de penetração da motorização híbrida.
 -- ----------------------------------------------------------------------------
-
 WITH vendas_consolidadas AS (
     SELECT
         vnd_id,
@@ -84,7 +83,6 @@ totais_por_cidade AS (
         COUNT(vnd.vnd_id) AS total_veiculos_vendidos,
         SUM(vnd.vnd_valor_final) AS faturamento_cidade,
         ROUND(AVG(vnd.vnd_valor_final), 2) AS ticket_medio_cidade,
-
         SUM(
             CASE 
                 WHEN LOWER(vsv.vsv_combustivel) LIKE '%híbrido%' 
@@ -92,7 +90,6 @@ totais_por_cidade AS (
                 THEN 1 ELSE 0 
             END
         ) AS vendas_hibridos,
-
         ROUND(
             (CAST(SUM(
                 CASE 
@@ -103,7 +100,6 @@ totais_por_cidade AS (
             ) AS DECIMAL(15, 2)) / NULLIF(COUNT(vnd.vnd_id), 0)) * 100,
             1
         ) AS taxa_penetracao_hibridos_pct
-
     FROM vendas_consolidadas AS vnd
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = vnd.vnd_status_venda_id
@@ -130,18 +126,14 @@ SELECT
     tpc.total_veiculos_vendidos,
     tpc.faturamento_cidade,
     tpc.ticket_medio_cidade,
-
     ROUND(
         (tpc.faturamento_cidade / NULLIF(SUM(tpc.faturamento_cidade) OVER (), 0)) * 100,
         2
     ) AS market_share_faturamento_pct,
-
     vcm.modelo AS modelo_mais_vendido,
     vcm.qtd_modelo AS unidades_modelo_mais_vendido,
-
     tpc.vendas_hibridos,
     tpc.taxa_penetracao_hibridos_pct
-
 FROM totais_por_cidade AS tpc
 JOIN vendas_cidade_modelo AS vcm
     ON vcm.cdd_id = tpc.cdd_id

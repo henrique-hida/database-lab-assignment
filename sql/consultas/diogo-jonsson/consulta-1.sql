@@ -1,12 +1,12 @@
 -- ----------------------------------------------------------------------------
--- Comparativo de desempenho comercial: Jan-Mar x Abr-Mai
--- Usa o historico gerado pela exclusao dos dados de Jan-Mar e compara
--- a media mensal de unidades e faturamento com a carga atual de Abr-Mai.
+-- Comparativo de desempenho comercial: Jan-Mai x Jun-Ago
+-- Usa o historico gerado pela exclusao dos dados de Jan-Mai e compara
+-- a media mensal de unidades e faturamento com a carga atual de Jun-Ago.
 -- ----------------------------------------------------------------------------
 
 WITH vendas_historicas AS (
     SELECT
-        'Jan-Mar' AS periodo,
+        'Jan-Mai' AS periodo,
         DATE_TRUNC('month', his_venda.vnd_data_pedido)::DATE AS mes,
         mdv.mdv_nome AS modelo,
         his_venda.vnd_valor_final AS valor_final,
@@ -21,12 +21,12 @@ WITH vendas_historicas AS (
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = his_venda.vnd_status_venda_id
     WHERE his_venda.vnd_data_pedido >= DATE '2026-01-01'
-      AND his_venda.vnd_data_pedido < DATE '2026-04-01'
+      AND his_venda.vnd_data_pedido < DATE '2026-06-01'
       AND svd.svd_nome = 'Entregue'
 ),
 vendas_atuais AS (
     SELECT
-        'Abr-Mai' AS periodo,
+        'Jun-Ago' AS periodo,
         DATE_TRUNC('month', vnd.vnd_data_pedido)::DATE AS mes,
         mdv.mdv_nome AS modelo,
         vnd.vnd_valor_final AS valor_final,
@@ -40,8 +40,8 @@ vendas_atuais AS (
         ON mdv.mdv_id = vsv.vsv_modelo_veiculo_id
     JOIN concessionaria.status_venda AS svd
         ON svd.svd_id = vnd.vnd_status_venda_id
-    WHERE vnd.vnd_data_pedido >= DATE '2026-04-01'
-      AND vnd.vnd_data_pedido < DATE '2026-06-01'
+    WHERE vnd.vnd_data_pedido >= DATE '2026-06-01'
+      AND vnd.vnd_data_pedido < DATE '2026-09-01'
       AND svd.svd_nome = 'Entregue'
 ),
 periodos AS (
@@ -62,40 +62,40 @@ resumo AS (
 comparativo AS (
     SELECT
         modelo,
-        MAX(unidades_vendidas) FILTER (WHERE periodo = 'Jan-Mar') AS unidades_jan_mar,
-        MAX(faturamento) FILTER (WHERE periodo = 'Jan-Mar') AS faturamento_jan_mar,
-        MAX(unidades_vendidas) FILTER (WHERE periodo = 'Abr-Mai') AS unidades_abr_mai,
-        MAX(faturamento) FILTER (WHERE periodo = 'Abr-Mai') AS faturamento_abr_mai,
-        MAX(desconto_medio) FILTER (WHERE periodo = 'Jan-Mar') AS desconto_medio_jan_mar,
-        MAX(desconto_medio) FILTER (WHERE periodo = 'Abr-Mai') AS desconto_medio_abr_mai
+        MAX(unidades_vendidas) FILTER (WHERE periodo = 'Jan-Mai') AS unidades_jan_mai,
+        MAX(faturamento) FILTER (WHERE periodo = 'Jan-Mai') AS faturamento_jan_mai,
+        MAX(unidades_vendidas) FILTER (WHERE periodo = 'Jun-Ago') AS unidades_jun_ago,
+        MAX(faturamento) FILTER (WHERE periodo = 'Jun-Ago') AS faturamento_jun_ago,
+        MAX(desconto_medio) FILTER (WHERE periodo = 'Jan-Mai') AS desconto_medio_jan_mai,
+        MAX(desconto_medio) FILTER (WHERE periodo = 'Jun-Ago') AS desconto_medio_jun_ago
     FROM resumo
     GROUP BY modelo
 )
 SELECT
     modelo,
-    COALESCE(unidades_jan_mar, 0) AS unidades_jan_mar,
-    COALESCE(unidades_abr_mai, 0) AS unidades_abr_mai,
-    ROUND(COALESCE(unidades_jan_mar, 0)::NUMERIC / 3, 2) AS media_mensal_jan_mar,
-    ROUND(COALESCE(unidades_abr_mai, 0)::NUMERIC / 2, 2) AS media_mensal_abr_mai,
+    COALESCE(unidades_jan_mai, 0) AS unidades_jan_mai,
+    COALESCE(unidades_jun_ago, 0) AS unidades_jun_ago,
+    ROUND(COALESCE(unidades_jan_mai, 0)::NUMERIC / 5, 2) AS media_mensal_jan_mai,
+    ROUND(COALESCE(unidades_jun_ago, 0)::NUMERIC / 3, 2) AS media_mensal_jun_ago,
     ROUND(
         (
             (
-                COALESCE(unidades_abr_mai, 0)::NUMERIC / 2
+                COALESCE(unidades_jun_ago, 0)::NUMERIC / 3
             ) - (
-                COALESCE(unidades_jan_mar, 0)::NUMERIC / 3
+                COALESCE(unidades_jan_mai, 0)::NUMERIC / 5
             )
         )
-        / NULLIF(COALESCE(unidades_jan_mar, 0)::NUMERIC / 3, 0)
+        / NULLIF(COALESCE(unidades_jan_mai, 0)::NUMERIC / 5, 0)
         * 100,
         2
     ) AS variacao_media_mensal_unidades_pct,
-    ROUND(COALESCE(faturamento_jan_mar, 0), 2) AS faturamento_jan_mar,
-    ROUND(COALESCE(faturamento_abr_mai, 0), 2) AS faturamento_abr_mai,
-    ROUND(COALESCE(faturamento_jan_mar, 0) / 3, 2) AS media_mensal_faturamento_jan_mar,
-    ROUND(COALESCE(faturamento_abr_mai, 0) / 2, 2) AS media_mensal_faturamento_abr_mai,
-    ROUND(desconto_medio_jan_mar, 2) AS desconto_medio_jan_mar,
-    ROUND(desconto_medio_abr_mai, 2) AS desconto_medio_abr_mai
+    ROUND(COALESCE(faturamento_jan_mai, 0), 2) AS faturamento_jan_mai,
+    ROUND(COALESCE(faturamento_jun_ago, 0), 2) AS faturamento_jun_ago,
+    ROUND(COALESCE(faturamento_jan_mai, 0) / 5, 2) AS media_mensal_faturamento_jan_mai,
+    ROUND(COALESCE(faturamento_jun_ago, 0) / 3, 2) AS media_mensal_faturamento_jun_ago,
+    ROUND(desconto_medio_jan_mai, 2) AS desconto_medio_jan_mai,
+    ROUND(desconto_medio_jun_ago, 2) AS desconto_medio_jun_ago
 FROM comparativo
 ORDER BY
-    media_mensal_abr_mai DESC,
+    media_mensal_jun_ago DESC,
     modelo;

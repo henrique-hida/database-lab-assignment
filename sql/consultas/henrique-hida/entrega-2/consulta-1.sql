@@ -1,25 +1,37 @@
 -- ----------------------------------------------------------------------------
--- Henrique Hida - Consulta 1
--- Evolucao mensal de vendas por modelo (Jan-Ago/2026)
--- Responde a duvida: quais modelos entregues lideram o faturamento em cada
+-- Henrique Hida - Entrega 2 - Consulta 1
+-- Evolucao mensal de vendas por modelo com dados correntes e historicos
+-- Responde a duvida: quais modelos lideram o faturamento em cada
 -- mes e como o faturamento de cada modelo varia em relacao ao mes anterior?
 -- ----------------------------------------------------------------------------
 
 WITH vendas_consolidadas AS (
-    SELECT vnd_id, vnd_veiculo_id, vnd_valor_final, vnd_desconto,
-           vnd_data_pedido, vnd_status_venda_id
+    SELECT
+        vnd_id,
+        vnd_veiculo_id,
+        vnd_valor_final,
+        vnd_desconto,
+        vnd_data_pedido
     FROM concessionaria.venda
     UNION ALL
-    SELECT vnd_id, vnd_veiculo_id, vnd_valor_final, vnd_desconto,
-           vnd_data_pedido, vnd_status_venda_id
-    FROM concessionaria.his_venda
+    SELECT
+        vnd_id,
+        vnd_veiculo_id,
+        vnd_valor_final,
+        vnd_desconto,
+        vnd_data_pedido
+    FROM concessionaria.hvenda
 ),
 veiculos_consolidados AS (
-    SELECT vcl_id, vcl_versao_veiculo_id
+    SELECT
+        vcl_id,
+        vcl_versao_veiculo_id
     FROM concessionaria.veiculo
     UNION ALL
-    SELECT vcl_id, vcl_versao_veiculo_id
-    FROM concessionaria.his_veiculo
+    SELECT
+        vcl_id,
+        vcl_versao_veiculo_id
+    FROM concessionaria.hveiculo
 ),
 vendas_mensais AS (
     SELECT
@@ -29,16 +41,12 @@ vendas_mensais AS (
         SUM(vnd.vnd_valor_final) AS faturamento,
         AVG(vnd.vnd_desconto) AS desconto_medio
     FROM vendas_consolidadas AS vnd
-    JOIN veiculos_consolidados AS vcl ON vcl.vcl_id = vnd.vnd_veiculo_id
+    JOIN veiculos_consolidados AS vcl
+        ON vcl.vcl_id = vnd.vnd_veiculo_id
     JOIN concessionaria.versao_veiculo AS vsv
         ON vsv.vsv_id = vcl.vcl_versao_veiculo_id
     JOIN concessionaria.modelo_veiculo AS mdv
         ON mdv.mdv_id = vsv.vsv_modelo_veiculo_id
-    JOIN concessionaria.status_venda AS svd
-        ON svd.svd_id = vnd.vnd_status_venda_id
-    WHERE svd.svd_nome = 'Entregue'
-      AND vnd.vnd_data_pedido >= DATE '2026-01-01'
-      AND vnd.vnd_data_pedido < DATE '2026-09-01'
     GROUP BY DATE_TRUNC('month', vnd.vnd_data_pedido), mdv.mdv_nome
 ),
 comparativo AS (

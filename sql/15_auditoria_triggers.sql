@@ -1,5 +1,6 @@
 BEGIN;
 
+-- Funcao unica utilizada pelos triggers de auditoria.
 CREATE FUNCTION auditoria.fn_registrar_alteracao()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -19,6 +20,7 @@ DECLARE
 BEGIN
     dados_antigos := to_jsonb(OLD);
 
+    -- DELETE nao possui NEW: registra o valor anterior de todas as colunas.
     IF TG_OP = 'DELETE' THEN
         FOR nome_campo IN
             SELECT chave
@@ -48,6 +50,7 @@ BEGIN
         RETURN OLD;
     END IF;
 
+    -- UPDATE: grava somente as colunas cujo valor foi efetivamente modificado.
     dados_novos := to_jsonb(NEW);
 
     FOR nome_campo IN
@@ -82,10 +85,14 @@ BEGIN
 END;
 $$;
 
+-- Mantem a funcao sob a role proprietaria do schema de auditoria.
 ALTER FUNCTION auditoria.fn_registrar_alteracao() OWNER TO tsusho_audit;
 
+-- Impede invocacao direta por roles nao autorizadas.
 REVOKE ALL ON FUNCTION auditoria.fn_registrar_alteracao() FROM PUBLIC;
 
+-- Cria o trigger apenas para tabelas operacionais. As tabelas historicas h*
+-- ja armazenam versoes anteriores e nao devem gerar registros de auditoria.
 DO $$
 DECLARE
     tabela RECORD;
@@ -97,6 +104,7 @@ BEGIN
             ON esquema.oid = classe.relnamespace
         WHERE esquema.nspname = 'concessionaria'
           AND classe.relkind = 'r'
+          AND classe.relname NOT LIKE 'h%'
     LOOP
         EXECUTE format(
             'CREATE TRIGGER tg_auditoria_registro '

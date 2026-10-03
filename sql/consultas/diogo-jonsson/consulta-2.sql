@@ -13,7 +13,7 @@ WITH vendas_consolidadas AS (
     SELECT
         vnd_id, vnd_valor_final, vnd_data_pedido, vnd_data_faturamento,
         vnd_data_entrega, vnd_status_venda_id, vnd_cliente_id
-    FROM concessionaria.his_venda
+    FROM concessionaria.hvenda
 )
 SELECT
     cdd.cdd_nome AS cidade,

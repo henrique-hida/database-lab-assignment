@@ -28,7 +28,7 @@ WITH vendas_consolidadas AS (
         vnd_parcelas,
         vnd_valor_parcela,
         vnd_status_venda_id
-    FROM concessionaria.his_venda
+    FROM concessionaria.hvenda
 ),
 trocas_consolidadas AS (
     SELECT
@@ -43,7 +43,7 @@ trocas_consolidadas AS (
         vtr_venda_id,
         vtr_descricao,
         vtr_valor_avaliado
-    FROM concessionaria.his_veiculo_troca
+    FROM concessionaria.hveiculo_troca
 ),
 resumo_trocas_por_venda AS (
     SELECT

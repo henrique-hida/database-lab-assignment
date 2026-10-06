@@ -1,101 +1,86 @@
 -- ----------------------------------------------------------------------------
--- Matheus Schalch - Entrega 2 - Consulta 2
--- Estrutura de Financiamento e Veículos de Troca (Trade-in) com dados consolidados
--- Responde à dúvida: qual a representatividade de cada forma de pagamento,
--- as condições médias de parcelamento/entrada e o impacto da absorção de seminovos
--- considerando todo o histórico da concessionária?
+-- Matheus Schalch - Entrega 2 - Consulta 2 (Base Analítica Consolidada para Power BI)
+-- Estrutura de Pagamento e Absorção de Veículos de Troca (Corrente + Histórico)
 -- ----------------------------------------------------------------------------
 
 WITH vendas_consolidadas AS (
     SELECT
         vnd_id,
+        vnd_data_pedido,
         vnd_forma_pagamento_id,
         vnd_valor_carro,
+        vnd_desconto,
         vnd_valor_final,
         vnd_entrada,
         vnd_parcelas,
-        vnd_valor_parcela
+        vnd_valor_parcela,
+        'Corrente' AS tipo_registro
     FROM concessionaria.venda
     UNION ALL
     SELECT
         vnd_id,
+        vnd_data_pedido,
         vnd_forma_pagamento_id,
         vnd_valor_carro,
+        vnd_desconto,
         vnd_valor_final,
         vnd_entrada,
         vnd_parcelas,
-        vnd_valor_parcela
+        vnd_valor_parcela,
+        'Histórico' AS tipo_registro
     FROM concessionaria.hvenda
 ),
 trocas_consolidadas AS (
     SELECT
         vtr_id,
         vtr_venda_id,
+        vtr_descricao,
         vtr_valor_avaliado
     FROM concessionaria.veiculo_troca
     UNION ALL
     SELECT
         vtr_id,
         vtr_venda_id,
+        vtr_descricao,
         vtr_valor_avaliado
     FROM concessionaria.hveiculo_troca
-),
-trocas_por_venda AS (
-    SELECT
-        vtr_venda_id,
-        vtr_valor_avaliado AS valor_troca
-    FROM trocas_consolidadas
-),
-consolidado_pagamento AS (
-    SELECT
-        fpg.fpg_id,
-        fpg.fpg_descricao AS forma_pagamento,
-        COUNT(vnd.vnd_id) AS total_vendas,
-        SUM(vnd.vnd_valor_final) AS faturamento_total,
-        ROUND(AVG(vnd.vnd_valor_final), 2) AS ticket_medio_venda,
-        ROUND(
-            AVG(COALESCE(vnd.vnd_entrada, 0) / NULLIF(vnd.vnd_valor_final, 0) * 100),
-            2
-        ) AS percentual_medio_entrada,
-        ROUND(AVG(vnd.vnd_parcelas), 0) AS prazo_medio_parcelas,
-        ROUND(AVG(vnd.vnd_valor_parcela), 2) AS valor_medio_parcela,
-        COUNT(tpv.vtr_venda_id) AS vendas_com_troca,
-        ROUND(
-            COUNT(tpv.vtr_venda_id)::NUMERIC / NULLIF(COUNT(vnd.vnd_id), 0) * 100,
-            2
-        ) AS taxa_adesao_troca_pct,
-        COALESCE(SUM(tpv.valor_troca), 0) AS volume_financeiro_trocas,
-        ROUND(COALESCE(AVG(tpv.valor_troca), 0), 2) AS ticket_medio_usado_troca,
-        ROUND(
-            AVG(tpv.valor_troca / NULLIF(vnd.vnd_valor_carro, 0) * 100),
-            2
-        ) AS cobertura_media_pelo_usado_pct
-    FROM vendas_consolidadas AS vnd
-    JOIN concessionaria.forma_pagamento AS fpg
-        ON fpg.fpg_id = vnd.vnd_forma_pagamento_id
-    LEFT JOIN trocas_por_venda AS tpv
-        ON tpv.vtr_venda_id = vnd.vnd_id
-    GROUP BY
-        fpg.fpg_id,
-        fpg.fpg_descricao
 )
 SELECT
-    RANK() OVER (ORDER BY faturamento_total DESC) AS posicao,
-    forma_pagamento,
-    total_vendas,
-    ROUND(faturamento_total, 2) AS faturamento_total,
+    vnd.vnd_id AS id_venda,
+    vnd.tipo_registro,
+    vnd.vnd_data_pedido AS data_pedido,
+    DATE_TRUNC('month', vnd.vnd_data_pedido)::DATE AS mes_pedido,
+    fpg.fpg_id AS id_forma_pagamento,
+    fpg.fpg_descricao AS forma_pagamento,
+    vnd.vnd_valor_carro AS valor_carro,
+    vnd.vnd_desconto AS valor_desconto,
+    vnd.vnd_valor_final AS valor_venda_final,
+    COALESCE(vnd.vnd_entrada, 0) AS valor_entrada,
     ROUND(
-        faturamento_total / NULLIF(SUM(faturamento_total) OVER (), 0) * 100,
+        COALESCE(vnd.vnd_entrada, 0) / NULLIF(vnd.vnd_valor_final, 0) * 100,
         2
-    ) AS representatividade_faturamento_pct,
-    ticket_medio_venda,
-    percentual_medio_entrada,
-    prazo_medio_parcelas,
-    valor_medio_parcela,
-    vendas_com_troca,
-    taxa_adesao_troca_pct,
-    ROUND(volume_financeiro_trocas, 2) AS volume_financeiro_trocas,
-    ticket_medio_usado_troca,
-    cobertura_media_pelo_usado_pct
-FROM consolidado_pagamento
-ORDER BY posicao, forma_pagamento;
+    ) AS percentual_entrada_pct,
+    COALESCE(vnd.vnd_parcelas, 0) AS qtd_parcelas,
+    COALESCE(vnd.vnd_valor_parcela, 0) AS valor_parcela,
+    CASE
+        WHEN vtr.vtr_id IS NOT NULL THEN 'Sim'
+        ELSE 'Não'
+    END AS tem_veiculo_troca,
+    CASE
+        WHEN vtr.vtr_id IS NOT NULL THEN 1
+        ELSE 0
+    END AS flag_troca,
+    vtr.vtr_descricao AS modelo_veiculo_usado,
+    COALESCE(vtr.vtr_valor_avaliado, 0) AS valor_avaliacao_usado,
+    ROUND(
+        COALESCE(vtr.vtr_valor_avaliado, 0) / NULLIF(vnd.vnd_valor_carro, 0) * 100,
+        2
+    ) AS cobertura_usado_pct
+FROM vendas_consolidadas AS vnd
+JOIN concessionaria.forma_pagamento AS fpg
+    ON fpg.fpg_id = vnd.vnd_forma_pagamento_id
+LEFT JOIN trocas_consolidadas AS vtr
+    ON vtr.vtr_venda_id = vnd.vnd_id
+ORDER BY
+    vnd.vnd_data_pedido DESC,
+    vnd.vnd_id DESC;

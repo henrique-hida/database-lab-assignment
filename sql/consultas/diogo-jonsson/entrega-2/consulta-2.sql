@@ -1,0 +1,62 @@
+-- ----------------------------------------------------------------------------
+-- Diogo Jonsson - Entrega 2 - Consulta 2
+-- Análise de prazo operacional de vendas por cidade (com histórico)
+-- Mede o tempo entre pedido, faturamento e entrega para identificar
+-- diferenças operacionais entre os mercados atendidos pela concessionária
+-- Consolida dados correntes e históricos
+-- ----------------------------------------------------------------------------
+
+WITH vendas_consolidadas AS (
+    SELECT
+        vnd_id,
+        vnd_cliente_id,
+        vnd_status_venda_id,
+        vnd_valor_final,
+        vnd_data_pedido,
+        vnd_data_faturamento,
+        vnd_data_entrega
+    FROM concessionaria.venda
+    UNION ALL
+    SELECT
+        vnd_id,
+        vnd_cliente_id,
+        vnd_status_venda_id,
+        vnd_valor_final,
+        vnd_data_pedido,
+        vnd_data_faturamento,
+        vnd_data_entrega
+    FROM concessionaria.hvenda
+)
+SELECT
+    cdd.cdd_nome AS cidade,
+    cdd.cdd_uf AS uf,
+    COUNT(vnd.vnd_id) AS vendas_entregues,
+    ROUND(AVG(vnd.vnd_valor_final), 2) AS ticket_medio,
+    ROUND(AVG(vnd.vnd_data_faturamento - vnd.vnd_data_pedido), 2) AS media_dias_pedido_faturamento,
+    ROUND(
+        AVG(vnd.vnd_data_entrega - vnd.vnd_data_faturamento)
+        FILTER (WHERE vnd.vnd_data_faturamento IS NOT NULL),
+        2
+    ) AS media_dias_faturamento_entrega,
+    ROUND(AVG(vnd.vnd_data_entrega - vnd.vnd_data_pedido), 2) AS media_dias_pedido_entrega,
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE vnd.vnd_data_entrega - vnd.vnd_data_pedido <= 7
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS percentual_entregas_ate_7_dias
+FROM vendas_consolidadas AS vnd
+JOIN concessionaria.status_venda AS svd
+    ON svd.svd_id = vnd.vnd_status_venda_id
+JOIN concessionaria.cliente AS cln
+    ON cln.cln_id = vnd.vnd_cliente_id
+JOIN concessionaria.cidade AS cdd
+    ON cdd.cdd_id = cln.cln_cidade_id
+WHERE svd.svd_nome = 'Entregue'
+GROUP BY
+    cdd.cdd_id,
+    cdd.cdd_nome,
+    cdd.cdd_uf
+ORDER BY
+    media_dias_pedido_entrega DESC,
+    cidade;

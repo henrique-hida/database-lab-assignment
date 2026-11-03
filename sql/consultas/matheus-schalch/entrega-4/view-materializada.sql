@@ -1,6 +1,6 @@
 -- ----------------------------------------------------------------------------
 -- Matheus Schalch - Entrega 4 - View Materializada
--- Top 10 desempenho regional de vendas e adoção de veículos híbridos (com histórico)
+-- Desempenho regional de vendas e adoção de veículos híbridos (com histórico)
 -- Materializa a consolidação de dados correntes e históricos no schema dw
 -- ----------------------------------------------------------------------------
 
@@ -103,7 +103,6 @@ ORDER BY
     posicao,
     cidade,
     modelo
-LIMIT 10
 WITH DATA;
 
 ALTER MATERIALIZED VIEW dw.mv_desempenho_regional_hibridos OWNER TO tsusho_dw;

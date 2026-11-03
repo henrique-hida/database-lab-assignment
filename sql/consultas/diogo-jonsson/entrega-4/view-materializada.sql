@@ -1,97 +1,81 @@
 -- ----------------------------------------------------------------------------
 -- Diogo Jonsson - Entrega 4 - View Materializada
--- Desempenho e ranking de modelos por faturamento e volume (com histórico)
+-- Análise de prazo operacional de vendas por cidade (com histórico)
 -- Materializa a consolidação de dados correntes e históricos no schema dw
 -- ----------------------------------------------------------------------------
 
 DROP MATERIALIZED VIEW IF EXISTS dw.mv_desempenho_modelos;
+DROP MATERIALIZED VIEW IF EXISTS dw.mv_prazo_operacional_cidade;
 
-CREATE MATERIALIZED VIEW dw.mv_desempenho_modelos AS
+CREATE MATERIALIZED VIEW dw.mv_prazo_operacional_cidade AS
 WITH vendas_consolidadas AS (
     SELECT
         vnd_id,
-        vnd_veiculo_id,
+        vnd_cliente_id,
+        vnd_status_venda_id,
         vnd_valor_final,
-        vnd_valor_carro,
-        vnd_desconto,
-        vnd_status_venda_id
+        vnd_data_pedido,
+        vnd_data_faturamento,
+        vnd_data_entrega
     FROM concessionaria.venda
     UNION ALL
     SELECT
         vnd_id,
-        vnd_veiculo_id,
+        vnd_cliente_id,
+        vnd_status_venda_id,
         vnd_valor_final,
-        vnd_valor_carro,
-        vnd_desconto,
-        vnd_status_venda_id
+        vnd_data_pedido,
+        vnd_data_faturamento,
+        vnd_data_entrega
     FROM concessionaria.hvenda
-),
-veiculos_consolidados AS (
-    SELECT
-        vcl_id,
-        vcl_versao_veiculo_id
-    FROM concessionaria.veiculo
-    UNION ALL
-    SELECT
-        vcl_id,
-        vcl_versao_veiculo_id
-    FROM concessionaria.hveiculo
-),
-vendas_por_modelo AS (
-    SELECT
-        mdv.mdv_nome AS modelo,
-        COUNT(*) AS unidades_vendidas,
-        SUM(vnd.vnd_valor_final) AS faturamento_total,
-        ROUND(AVG(vnd.vnd_valor_final), 2) AS ticket_medio,
-        ROUND(AVG(vnd.vnd_desconto), 2) AS desconto_medio,
-        ROUND(SUM(vnd.vnd_desconto) / NULLIF(SUM(vnd.vnd_valor_carro), 0) * 100, 2) AS percentual_desconto_total
-    FROM vendas_consolidadas AS vnd
-    JOIN veiculos_consolidados AS vcl
-        ON vcl.vcl_id = vnd.vnd_veiculo_id
-    JOIN concessionaria.versao_veiculo AS vsv
-        ON vsv.vsv_id = vcl.vcl_versao_veiculo_id
-    JOIN concessionaria.modelo_veiculo AS mdv
-        ON mdv.mdv_id = vsv.vsv_modelo_veiculo_id
-    JOIN concessionaria.status_venda AS svd
-        ON svd.svd_id = vnd.vnd_status_venda_id
-    WHERE svd.svd_nome = 'Entregue'
-    GROUP BY mdv.mdv_nome
-),
-ranking AS (
-    SELECT
-        modelo,
-        unidades_vendidas,
-        faturamento_total,
-        ticket_medio,
-        desconto_medio,
-        percentual_desconto_total,
-        DENSE_RANK() OVER (ORDER BY faturamento_total DESC) AS ranking_faturamento,
-        DENSE_RANK() OVER (ORDER BY unidades_vendidas DESC) AS ranking_volume
-    FROM vendas_por_modelo
 )
 SELECT
-    ranking_faturamento,
-    ranking_volume,
-    modelo,
-    unidades_vendidas,
-    ROUND(faturamento_total, 2) AS faturamento_total,
-    ticket_medio,
-    desconto_medio,
-    percentual_desconto_total
-FROM ranking
-ORDER BY ranking_faturamento, ranking_volume, modelo
+    cdd.cdd_nome AS cidade,
+    cdd.cdd_uf AS uf,
+    COUNT(vnd.vnd_id) AS vendas_entregues,
+    ROUND(AVG(vnd.vnd_valor_final), 2) AS ticket_medio,
+    ROUND(AVG(vnd.vnd_data_faturamento - vnd.vnd_data_pedido), 2) AS media_dias_pedido_faturamento,
+    ROUND(
+        AVG(vnd.vnd_data_entrega - vnd.vnd_data_faturamento)
+        FILTER (WHERE vnd.vnd_data_faturamento IS NOT NULL),
+        2
+    ) AS media_dias_faturamento_entrega,
+    ROUND(AVG(vnd.vnd_data_entrega - vnd.vnd_data_pedido), 2) AS media_dias_pedido_entrega,
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE vnd.vnd_data_entrega - vnd.vnd_data_pedido <= 7
+        ) / NULLIF(COUNT(*), 0),
+        2
+    ) AS percentual_entregas_ate_7_dias
+FROM vendas_consolidadas AS vnd
+JOIN concessionaria.status_venda AS svd
+    ON svd.svd_id = vnd.vnd_status_venda_id
+JOIN concessionaria.cliente AS cln
+    ON cln.cln_id = vnd.vnd_cliente_id
+JOIN concessionaria.cidade AS cdd
+    ON cdd.cdd_id = cln.cln_cidade_id
+WHERE svd.svd_nome = 'Entregue'
+GROUP BY
+    cdd.cdd_id,
+    cdd.cdd_nome,
+    cdd.cdd_uf
+ORDER BY
+    media_dias_pedido_entrega DESC,
+    cidade
 WITH DATA;
 
-ALTER MATERIALIZED VIEW dw.mv_desempenho_modelos OWNER TO tsusho_dw;
+ALTER MATERIALIZED VIEW dw.mv_prazo_operacional_cidade OWNER TO tsusho_dw;
 
 SELECT
-    ranking_faturamento,
-    ranking_volume,
-    modelo,
-    unidades_vendidas,
-    faturamento_total,
+    cidade,
+    uf,
+    vendas_entregues,
     ticket_medio,
-    desconto_medio,
-    percentual_desconto_total
-FROM dw.mv_desempenho_modelos
-ORDER BY ranking_faturamento, ranking_volume, modelo;
+    media_dias_pedido_faturamento,
+    media_dias_faturamento_entrega,
+    media_dias_pedido_entrega,
+    percentual_entregas_ate_7_dias
+FROM dw.mv_prazo_operacional_cidade
+ORDER BY
+    media_dias_pedido_entrega DESC,
+    cidade;

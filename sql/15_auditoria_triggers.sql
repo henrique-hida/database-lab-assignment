@@ -1,7 +1,57 @@
 BEGIN;
 
--- Funcao unica utilizada pelos triggers de auditoria.
-CREATE FUNCTION auditoria.fn_registrar_alteracao()
+-- Procedure responsavel por inserir os registros na tabela de auditoria.
+CREATE OR REPLACE PROCEDURE auditoria.proc_auditoria(
+    p_tabela_afetada VARCHAR(100),
+    p_operacao CHAR(1),
+    p_campo_editado VARCHAR(100),
+    p_valor_antigo VARCHAR(100),
+    p_valor_novo VARCHAR(100),
+    p_bd_user VARCHAR(30),
+    p_os_user VARCHAR(255),
+    p_data_entrada TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, auditoria
+AS $$
+BEGIN
+    INSERT INTO auditoria.registro (
+        tabela_afetada,
+        operacao,
+        campo_editado,
+        valor_antigo,
+        valor_novo,
+        data_entrada_auditoria,
+        bd_user,
+        os_user
+    ) VALUES (
+        p_tabela_afetada,
+        p_operacao,
+        p_campo_editado,
+        p_valor_antigo,
+        p_valor_novo,
+        p_data_entrada,
+        p_bd_user,
+        p_os_user
+    );
+END;
+$$;
+
+ALTER PROCEDURE auditoria.proc_auditoria(
+    VARCHAR, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
+) OWNER TO tsusho_audit;
+
+REVOKE ALL ON PROCEDURE auditoria.proc_auditoria(
+    VARCHAR, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
+) FROM PUBLIC;
+
+GRANT EXECUTE ON PROCEDURE auditoria.proc_auditoria(
+    VARCHAR, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
+) TO tsusho_audit;
+
+-- Funcao utilizada pelos triggers de auditoria que aciona a procedure.
+CREATE OR REPLACE FUNCTION auditoria.fn_registrar_alteracao()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -13,6 +63,7 @@ DECLARE
     nome_campo TEXT;
     valor_antigo JSONB;
     valor_novo JSONB;
+    usuario_banco TEXT := SESSION_USER;
     usuario_sistema TEXT := COALESCE(
         NULLIF(current_setting('app.os_user', true), ''),
         SESSION_USER
@@ -20,7 +71,7 @@ DECLARE
 BEGIN
     dados_antigos := to_jsonb(OLD);
 
-    -- DELETE nao possui NEW: registra o valor anterior de todas as colunas.
+    -- DELETE nao possui NEW: registra o valor anterior de todas as colunas via procedure.
     IF TG_OP = 'DELETE' THEN
         FOR nome_campo IN
             SELECT chave
@@ -28,29 +79,22 @@ BEGIN
         LOOP
             valor_antigo := dados_antigos -> nome_campo;
 
-            INSERT INTO auditoria.registro (
-                tabela_afetada,
-                operacao,
-                campo_editado,
-                valor_antigo,
-                valor_novo,
-                bd_user,
-                os_user
-            ) VALUES (
+            CALL auditoria.proc_auditoria(
                 format('%I.%I', TG_TABLE_SCHEMA, TG_TABLE_NAME),
                 'D',
                 nome_campo,
                 LEFT(valor_antigo #>> '{}', 100),
                 NULL,
-                SESSION_USER,
-                usuario_sistema
+                usuario_banco,
+                usuario_sistema,
+                CURRENT_TIMESTAMP
             );
         END LOOP;
 
         RETURN OLD;
     END IF;
 
-    -- UPDATE: grava somente as colunas cujo valor foi efetivamente modificado.
+    -- UPDATE: grava somente as colunas cujo valor foi efetivamente modificado via procedure.
     dados_novos := to_jsonb(NEW);
 
     FOR nome_campo IN
@@ -61,22 +105,15 @@ BEGIN
         valor_novo := dados_novos -> nome_campo;
 
         IF valor_antigo IS DISTINCT FROM valor_novo THEN
-            INSERT INTO auditoria.registro (
-                tabela_afetada,
-                operacao,
-                campo_editado,
-                valor_antigo,
-                valor_novo,
-                bd_user,
-                os_user
-            ) VALUES (
+            CALL auditoria.proc_auditoria(
                 format('%I.%I', TG_TABLE_SCHEMA, TG_TABLE_NAME),
                 'U',
                 nome_campo,
                 LEFT(valor_antigo #>> '{}', 100),
                 LEFT(valor_novo #>> '{}', 100),
-                SESSION_USER,
-                usuario_sistema
+                usuario_banco,
+                usuario_sistema,
+                CURRENT_TIMESTAMP
             );
         END IF;
     END LOOP;

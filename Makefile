@@ -111,7 +111,7 @@ db-clear:
 			-v ON_ERROR_STOP=1 \
 			-U $(USER) \
 			-d $(DATABASE) \
-			-c 'DROP TABLE IF EXISTS public.tsusho_migrations; DROP SCHEMA IF EXISTS staging CASCADE; DROP SCHEMA IF EXISTS concessionaria CASCADE; DROP SCHEMA IF EXISTS auditoria CASCADE;' \
+			-c 'DROP TABLE IF EXISTS public.tsusho_migrations; DROP SCHEMA IF EXISTS staging CASCADE; DROP SCHEMA IF EXISTS concessionaria CASCADE; DROP SCHEMA IF EXISTS auditoria CASCADE; DROP SCHEMA IF EXISTS dw CASCADE;' \
 		;; \
 	  *) \
 		echo 'Operação cancelada.' \

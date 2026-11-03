@@ -5,6 +5,7 @@ CREATE SCHEMA auditoria;
 CREATE TABLE auditoria.registro (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     tabela_afetada VARCHAR(100) NOT NULL,
+    chave_registro JSONB NOT NULL,
     operacao CHAR(1) NOT NULL,
     campo_editado VARCHAR(100),
     valor_antigo VARCHAR(100),

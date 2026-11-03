@@ -3,6 +3,7 @@ BEGIN;
 -- Procedure responsavel por inserir os registros na tabela de auditoria.
 CREATE OR REPLACE PROCEDURE auditoria.proc_auditoria(
     p_tabela_afetada VARCHAR(100),
+    p_chave_registro JSONB,
     p_operacao CHAR(1),
     p_campo_editado VARCHAR(100),
     p_valor_antigo VARCHAR(100),
@@ -18,6 +19,7 @@ AS $$
 BEGIN
     INSERT INTO auditoria.registro (
         tabela_afetada,
+        chave_registro,
         operacao,
         campo_editado,
         valor_antigo,
@@ -27,6 +29,7 @@ BEGIN
         os_user
     ) VALUES (
         p_tabela_afetada,
+        p_chave_registro,
         p_operacao,
         p_campo_editado,
         p_valor_antigo,
@@ -39,15 +42,15 @@ END;
 $$;
 
 ALTER PROCEDURE auditoria.proc_auditoria(
-    VARCHAR, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
+    VARCHAR, JSONB, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
 ) OWNER TO tsusho_audit;
 
 REVOKE ALL ON PROCEDURE auditoria.proc_auditoria(
-    VARCHAR, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
+    VARCHAR, JSONB, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
 ) FROM PUBLIC;
 
 GRANT EXECUTE ON PROCEDURE auditoria.proc_auditoria(
-    VARCHAR, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
+    VARCHAR, JSONB, CHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TIMESTAMPTZ
 ) TO tsusho_audit;
 
 -- Funcao utilizada pelos triggers de auditoria que aciona a procedure.
@@ -60,6 +63,7 @@ AS $$
 DECLARE
     dados_antigos JSONB;
     dados_novos JSONB;
+    chave_registro JSONB;
     nome_campo TEXT;
     valor_antigo JSONB;
     valor_novo JSONB;
@@ -71,6 +75,16 @@ DECLARE
 BEGIN
     dados_antigos := to_jsonb(OLD);
 
+    -- Preserva a chave primaria anterior, inclusive quando ela for alterada.
+    SELECT jsonb_object_agg(atributo.attname, dados_antigos -> atributo.attname)
+    INTO chave_registro
+    FROM pg_index AS indice
+    JOIN pg_attribute AS atributo
+        ON atributo.attrelid = indice.indrelid
+       AND atributo.attnum = ANY(indice.indkey)
+    WHERE indice.indrelid = TG_RELID
+      AND indice.indisprimary;
+
     -- DELETE nao possui NEW: registra o valor anterior de todas as colunas via procedure.
     IF TG_OP = 'DELETE' THEN
         FOR nome_campo IN
@@ -81,6 +95,7 @@ BEGIN
 
             CALL auditoria.proc_auditoria(
                 format('%I.%I', TG_TABLE_SCHEMA, TG_TABLE_NAME),
+                chave_registro,
                 'D',
                 nome_campo,
                 LEFT(valor_antigo #>> '{}', 100),
@@ -107,6 +122,7 @@ BEGIN
         IF valor_antigo IS DISTINCT FROM valor_novo THEN
             CALL auditoria.proc_auditoria(
                 format('%I.%I', TG_TABLE_SCHEMA, TG_TABLE_NAME),
+                chave_registro,
                 'U',
                 nome_campo,
                 LEFT(valor_antigo #>> '{}', 100),
@@ -128,8 +144,7 @@ ALTER FUNCTION auditoria.fn_registrar_alteracao() OWNER TO tsusho_audit;
 -- Impede invocacao direta por roles nao autorizadas.
 REVOKE ALL ON FUNCTION auditoria.fn_registrar_alteracao() FROM PUBLIC;
 
--- Cria o trigger apenas para tabelas operacionais. As tabelas historicas h*
--- ja armazenam versoes anteriores e nao devem gerar registros de auditoria.
+-- Inclui as tabelas operacionais e de historico na auditoria.
 DO $$
 DECLARE
     tabela RECORD;
@@ -141,7 +156,6 @@ BEGIN
             ON esquema.oid = classe.relnamespace
         WHERE esquema.nspname = 'concessionaria'
           AND classe.relkind = 'r'
-          AND classe.relname NOT LIKE 'h%'
     LOOP
         EXECUTE format(
             'CREATE TRIGGER tg_auditoria_registro '
